@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronDown, ChevronUp, BarChart } from 'lucide-react';
+import { ChevronDown, ChevronUp, BarChart, Zap } from 'lucide-react';
 import styles from './LaserController.module.css';
 
 interface SerialPort {
@@ -378,8 +378,9 @@ const LaserController: React.FC = () => {
                     <div className={`${styles.card} ${laserOn ? styles.cardActive : ''}`}>
                         <div className={styles.cardHeader}>
                             <h2 className={styles.cardTitle}>
-                                <div className={`${styles.laserDot} ${laserOn ? styles.laserActive : ''}`}></div>
-                                Laser (Pin 6)
+                                <Zap size={20}/>
+                                <div className={`${laserOn ? styles.laserActive : ''}`}></div>
+                                LASER-5V
                             </h2>
 
                             <button
