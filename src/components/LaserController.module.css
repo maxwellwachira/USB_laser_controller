@@ -1,0 +1,598 @@
+/* Container and Layout */
+.container {
+    min-height: 100vh;
+    background-color: #fff;
+    padding: 24px;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #2c3e50;
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+}
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 600px;
+    gap: 35px;
+    padding: 25px;
+}
+
+/* Logo Styles */
+.logoContainer {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+/* Typography */
+.title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    margin-top: -30px;
+    text-align: center;
+    color: #1e293b;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+    position: relative;
+    letter-spacing: -0.02em;
+}
+
+.title::after {
+    content: "";
+    position: absolute;
+    width: 42px;
+    height: 3.5px;
+    background: #3CABC5;
+    border-radius: 8px;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 10px rgba(60, 171, 197, 0.3);
+    transition: width 0.4s ease;
+}
+
+.sectionTitle {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+/* Status Section */
+.statusSection {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border: 1px solid #ecf0f1;
+}
+
+.statusIndicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.statusInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.statusDot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.statusDot.connected {
+    background-color: #27ae60;
+    box-shadow: 0 0 20px rgba(39, 174, 96, 0.4);
+    animation: pulse 2s infinite;
+}
+
+.statusDot.disconnected {
+    background-color: #e74c3c;
+}
+
+.statusText {
+    font-weight: 700;
+    font-size: 18px;
+    color: #2c3e50;
+}
+
+.statusSubtext {
+    font-size: 14px;
+    color: #7f8c8d;
+}
+
+/* Button Styles */
+.button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 0.5px;
+}
+
+.button:hover:not(.disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.button:active:not(.disabled) {
+    transform: translateY(0);
+}
+
+.button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+
+.clearBtn {
+    background: linear-gradient(45deg, #7f8c8d, #95a5a6);
+    color: white;
+    font-size: 12px;
+}
+
+/* Card Styles */
+.card {
+    background-color: #ffffff;
+    border-radius: 16px;
+    border: 2px solid #e5e7eb;
+    padding: 24px;
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.card.cardActive {
+    border-color: #f9a8d4;
+    box-shadow: 0 25px 50px -12px rgba(236, 72, 153, 0.25), 0 0 30px rgba(236, 72, 153, 0.1);
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.cardTitle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.laserDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #9ca3af;
+    transition: all 0.3s ease;
+}
+
+.laserDot.laserActive {
+    background-color: #ec4899;
+    animation: pulsePink 2s infinite;
+}
+
+/* Switch Styles - Updated for Pink */
+.switch {
+    position: relative;
+    display: inline-flex;
+    height: 32px;
+    width: 64px;
+    align-items: center;
+    border-radius: 20px;
+    transition: background-color 0.3s ease;
+    border: none;
+    cursor: pointer;
+    outline: none;
+}
+
+.switch.switchOn {
+    background-color: #ec4899;
+}
+
+.switch.switchOff {
+    background-color: #d1d5db;
+}
+
+.switch.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.switchThumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: white;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.switchOn .switchThumb {
+    transform: translateX(28px);
+}
+
+.switchOff .switchThumb {
+    transform: translateX(4px);
+}
+
+/* Slider Styles - Updated for Pink */
+.sliderContainer {
+    margin-bottom: 24px;
+}
+
+.sliderHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.sliderLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.brightnessValue {
+    font-size: 14px;
+    font-weight: bold;
+    color: #1f2937;
+}
+
+.slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+    margin-bottom: 16px;
+    transition: opacity 0.3s ease;
+}
+
+.slider:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ec4899;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ec4899;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
+    border: none;
+}
+
+/* Advanced Toggle Styles */
+.advancedContent {
+    margin-top: 2rem;
+}
+
+.advancedToggle {
+    margin-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 16px;
+}
+
+.advancedToggleBtn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #6b7280;
+}
+
+.advancedToggleBtn:hover {
+    border-color: #d1d5db;
+    background-color: #f9fafb;
+}
+
+.advancedToggleBtn.active {
+    border-color: #9b59b6;
+    background-color: #f8f4fd;
+    color: #8e44ad;
+}
+
+.toggleContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+}
+
+.toggleText {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.toggleLabel {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.toggleSubtext {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.toggleIcon {
+    transition: all 0.3s ease;
+    transform: rotate(0deg);
+    opacity: 0.6;
+}
+
+.toggleIconActive {
+    transform: rotate(72deg);
+    opacity: 1;
+    color: #9b59b6;
+}
+
+/* Stats Panel */
+.statsCard {
+    margin-bottom: 24px;
+    padding: 24px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.statsHeader {
+    margin-bottom: 20px;
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.statItem {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background-color: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.statContent {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.statLabel {
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.statValue {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+}
+
+/* Console Styles */
+.consoleSection {
+    margin-top: 24px;
+}
+
+.consoleHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.consoleTitleContainer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.consoleBadge {
+    display: inline-block;
+    padding: 4px 12px;
+    color: white;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.consoleBadge.consoleBadgeOnline {
+    background-color: #27ae60;
+}
+
+.consoleBadge.consoleBadgeOffline {
+    background-color: #e74c3c;
+}
+
+.console {
+    background: linear-gradient(145deg, #2c3e50, #34495e);
+    color: #2ecc71;
+    border-radius: 15px;
+    padding: 20px;
+    height: 300px;
+    overflow-y: auto;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.console::-webkit-scrollbar {
+    width: 8px;
+}
+
+.console::-webkit-scrollbar-track {
+    background: #34495e;
+    border-radius: 4px;
+}
+
+.console::-webkit-scrollbar-thumb {
+    background: linear-gradient(45deg, #7f8c8d, #95a5a6);
+    border-radius: 4px;
+}
+
+.consoleEntry {
+    margin-bottom: 8px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.timestamp {
+    color: #95a5a6;
+    font-size: 11px;
+}
+
+/* Console Message Types */
+.error {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+.success {
+    color: #2ecc71;
+}
+
+.warning {
+    color: #f39c12;
+}
+
+.info {
+    color: #3498db;
+}
+
+.json {
+    color: #e67e22;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(39, 174, 96, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(39, 174, 96, 0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 16px;
+    }
+
+    .wrapper {
+        width: 100%;
+        margin: 0;
+    }
+
+    .title {
+        font-size: 24px;
+    }
+
+    .statusIndicator {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .cardHeader {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .switch {
+        align-self: center;
+    }
+
+    .statsGrid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .toggleContent {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .toggleIcon {
+        align-self: center;
+    }
+
+    .consoleHeader {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+
+    .consoleTitleContainer {
+        justify-content: space-between;
+    }
+
+    .clearBtn {
+        align-self: stretch;
+    }
+}
