@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronDown, ChevronUp, BarChart, Zap } from 'lucide-react';
 import styles from './LaserController.module.css';
 
@@ -57,6 +57,7 @@ interface SerialData {
     free_heap_bytes?: number;
     version?: string;
     laser_state?: boolean;
+    laser_brightness?: number;
     [key: string]: unknown;
 }
 
@@ -65,8 +66,7 @@ function debounce<T extends (...args: any[]) => any>(
     func: T,
     wait: number
 ): (...args: Parameters<T>) => void {
-    //@ts-expect-error
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
     return (...args: Parameters<T>) => {
         clearTimeout(timeout);
         timeout = setTimeout(() => func(...args), wait);
@@ -78,10 +78,12 @@ const LaserController: React.FC = () => {
     const [isConnected, setIsConnected] = useState<boolean>(false);
     const [reader, setReader] = useState<ReadableStreamDefaultReader<Uint8Array> | null>(null);
     const [writer, setWriter] = useState<WritableStreamDefaultWriter<Uint8Array> | null>(null);
+    const isConnectedRef = useRef<boolean>(false);
 
     // Device states
     const [laserOn, setLaserOn] = useState<boolean>(false);
     const [laserBrightness, setLaserBrightness] = useState<number>(50);
+    const [brightnessInitialized, setBrightnessInitialized] = useState<boolean>(false);
     const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
     // Device stats
@@ -102,7 +104,7 @@ const LaserController: React.FC = () => {
         command: string,
         currentWriter: WritableStreamDefaultWriter<Uint8Array> | null = writer
     ): Promise<void> => {
-        if (!currentWriter || !isConnected) {
+        if (!currentWriter || !isConnectedRef.current) {
             logMessage('No connection available', 'error');
             return;
         }
@@ -124,28 +126,26 @@ const LaserController: React.FC = () => {
     const debouncedSendBrightness = useCallback(
         debounce((brightness: number) => {
             sendCommand(`SET_LASER_PWM:${brightness}`);
-        }, 300),
+        }, 50),
         [writer, isConnected]
     );
 
-    // Simulate uptime
+    // Update isConnectedRef when isConnected changes
     useEffect(() => {
-        const interval = setInterval(() => {
-            setDeviceStats(prev => ({
-                ...prev,
-                uptime: prev.uptime + 1,
-                freeHeap: prev.freeHeap + Math.floor(Math.random() * 200 - 100)
-            }));
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
+        isConnectedRef.current = isConnected;
+        
+        // Reset brightness initialization when disconnected
+        if (!isConnected) {
+            setBrightnessInitialized(false);
+        }
+    }, [isConnected]);
 
-    // Auto-send brightness when changed
+    // Auto-send brightness when changed (only if brightness is already initialized)
     useEffect(() => {
-        if (laserOn && isConnected) {
+        if (laserOn && isConnected && brightnessInitialized) {
             debouncedSendBrightness(laserBrightness);
         }
-    }, [laserBrightness, laserOn, isConnected, debouncedSendBrightness]);
+    }, [laserBrightness, laserOn, isConnected, brightnessInitialized, debouncedSendBrightness]);
 
     const formatUptime = (seconds: number): string => {
         const days = Math.floor(seconds / 86400);
@@ -179,8 +179,7 @@ const LaserController: React.FC = () => {
 
             logMessage('Requesting serial port access...', 'warning');
 
-            //@ts-expect-error
-            const selectedPort = await navigator.serial.requestPort();
+            const selectedPort = await navigator.serial!.requestPort();
 
             await selectedPort.open({
                 baudRate: 115200,
@@ -204,13 +203,9 @@ const LaserController: React.FC = () => {
 
             logMessage('Successfully connected to laser device!', 'success');
 
-            // Start reading data
+            // Start reading data - the firmware will automatically send initial state
+            sendCommand('GET_INITIAL_STATE');
             startReading(newReader);
-
-            // Request initial status
-            setTimeout(() => {
-                sendCommand('STATUS', newWriter);
-            }, 1000);
 
         } catch (error: any) {
             logMessage(`Connection failed: ${error.message}`, 'error');
@@ -248,20 +243,27 @@ const LaserController: React.FC = () => {
         setReader(null);
         setWriter(null);
         setIsConnected(false);
+        setBrightnessInitialized(false);
         setDeviceStats(prev => ({ ...prev, firmwareVersion: "Unknown" }));
     };
 
     const startReading = async (currentReader: ReadableStreamDefaultReader<Uint8Array>): Promise<void> => {
         try {
             let buffer = '';
-
-            while (isConnected && currentReader) {
+            console.log('📖 Starting continuous data reading...', 'success')
+            while (currentReader) {
+                console.log("inside while loop")
                 try {
                     const { value, done } = await currentReader.read();
 
-                    if (done) break;
+                    if (done) {
+                        console.log('📡 Reading stream ended', 'warning');
+                        break;
+                    }
 
                     if (value) {
+
+                        console.log({ value })
                         const decoder = new TextDecoder();
                         buffer += decoder.decode(value);
 
@@ -289,18 +291,117 @@ const LaserController: React.FC = () => {
     };
 
     const processReceivedData = (data: string): void => {
+        console.log('Received data:', data); // Debug log
+
         try {
             const jsonData: SerialData = JSON.parse(data);
-            updateDeviceStats(jsonData);
+            console.log('Parsed JSON data:', jsonData); // Debug log
+            
+            // Handle initial_state message - this is automatically sent by firmware on connection
+            if (jsonData.type === 'initial_state') {
+                logMessage('Received initial device state from firmware', 'success');
+                
+                // Set laser state
+                if (jsonData.hasOwnProperty('laser_state')) {
+                    setLaserOn(!!jsonData.laser_state);
+                }
+                
+                // Set brightness from firmware
+                if (jsonData.hasOwnProperty('laser_brightness')) {
+                    const deviceBrightness = jsonData.laser_brightness || 50;
+                    setLaserBrightness(deviceBrightness);
+                    setBrightnessInitialized(true);
+                    logMessage(`Brightness synced from device: ${deviceBrightness}%`, 'info');
+                }
+                
+                // Set firmware version
+                if (jsonData.version) {
+                    //@ts-expect-error
+                    setDeviceStats(prev => ({ ...prev, firmwareVersion: jsonData.version }));
+                }
+                
+                // Update other stats
+                if (jsonData.uptime_ms) {
+                    setDeviceStats(prev => ({ 
+                        ...prev, 
+                        //@ts-ignore
+                        uptime: Math.floor(jsonData.uptime_ms / 1000)
+                    }));
+                }
+                if (jsonData.free_heap_bytes) {
+                    //@ts-expect-error
+                    setDeviceStats(prev => ({ 
+                        ...prev, 
+                        freeHeap: jsonData.free_heap_bytes
+                    }));
+                }
+            } else {
+                // Handle other JSON data types (status, heartbeat, etc.)
+                updateDeviceStats(jsonData);
+            }
+            
             logMessage(JSON.stringify(jsonData, null, 2), 'json');
         } catch (e) {
             logMessage(data, 'success');
 
-            // Check for firmware version in plain text
-            if (data.includes('Firmware Version:') || data.includes('ESP32-S3')) {
+            // Check for firmware version in plain text - updated for v5.1
+            if (data.includes('Firmware Version:') || data.includes('ESP32-S3') || data.includes('v5.') || data.includes('Ready')) {
                 const versionMatch = data.match(/v?(\d+\.\d+)/);
                 if (versionMatch) {
                     setDeviceStats(prev => ({ ...prev, firmwareVersion: versionMatch[1] }));
+                } else if (data.includes('v5.1') || data.includes('5.1') || data.includes('Ready')) {
+                    setDeviceStats(prev => ({ ...prev, firmwareVersion: '5.1' }));
+                } else if (data.includes('v5.0') || data.includes('5.0')) {
+                    setDeviceStats(prev => ({ ...prev, firmwareVersion: '5.0' }));
+                }
+            }
+
+            // Check for brightness loading message - this is the saved brightness from preferences
+            if (data.includes('Loaded brightness:')) {
+                const brightnessMatch = data.match(/Loaded brightness:\s*(\d+)%/);
+                if (brightnessMatch) {
+                    const loadedBrightness = parseInt(brightnessMatch[1]);
+                    setLaserBrightness(loadedBrightness);
+                    setBrightnessInitialized(true);
+                    logMessage(`Device brightness restored from preferences: ${loadedBrightness}%`, 'info');
+                }
+            }
+
+            // Check for device initialization message
+            if (data.includes('Device initialized')) {
+                const brightnessMatch = data.match(/Brightness:\s*(\d+)%/);
+                const laserMatch = data.match(/Laser:\s*(ON|OFF)/);
+                
+                if (brightnessMatch) {
+                    const deviceBrightness = parseInt(brightnessMatch[1]);
+                    setLaserBrightness(deviceBrightness);
+                    setBrightnessInitialized(true);
+                    logMessage(`Brightness initialized: ${deviceBrightness}%`, 'info');
+                }
+                
+                if (laserMatch) {
+                    setLaserOn(laserMatch[1] === 'ON');
+                }
+            }
+
+            // Check for connection detection message
+            if (data.includes('Connection detected')) {
+                logMessage('Firmware detected UI connection', 'info');
+            }
+
+            // Parse laser status response (if manually requested)
+            if (data.includes('Laser State:') && data.includes('Laser Brightness:')) {
+                const stateMatch = data.match(/Laser State:\s*(ON|OFF)/);
+                if (stateMatch) {
+                    setLaserOn(stateMatch[1] === 'ON');
+                }
+
+                const brightnessMatch = data.match(/Laser Brightness:\s*(\d+)%/);
+                if (brightnessMatch) {
+                    const deviceBrightness = parseInt(brightnessMatch[1]);
+                    setLaserBrightness(deviceBrightness);
+                    setBrightnessInitialized(true);
+                    logMessage(`Manual brightness sync: ${deviceBrightness}%`, 'info');
                 }
             }
         }
@@ -311,12 +412,30 @@ const LaserController: React.FC = () => {
             setDeviceStats(prev => ({
                 ...prev,
                 uptime: data.uptime_ms ? Math.floor(data.uptime_ms / 1000) : prev.uptime,
-                freeHeap: data.free_heap_bytes || prev.freeHeap,
+                freeHeap: data.free_heap_bytes || (prev.freeHeap),
                 firmwareVersion: data.version || prev.firmwareVersion
             }));
 
+            // Update laser state from firmware
             if (data.hasOwnProperty('laser_state')) {
-                setLaserOn(data.laser_state!);
+                setLaserOn(!!data.laser_state);
+            }
+
+            // Update laser brightness from firmware
+            if (data.hasOwnProperty('laser_brightness')) {
+                const firmwareBrightness = data.laser_brightness || 0;
+                
+                // If brightness hasn't been initialized yet, use the firmware value
+                if (!brightnessInitialized) {
+                    setLaserBrightness(firmwareBrightness);
+                    setBrightnessInitialized(true);
+                    logMessage(`Brightness sync from heartbeat: ${firmwareBrightness}%`, 'info');
+                } else {
+                    // Only update if significantly different to avoid fighting with user input
+                    if (Math.abs(firmwareBrightness - laserBrightness) > 2) {
+                        setLaserBrightness(firmwareBrightness);
+                    }
+                }
             }
         }
     };
@@ -328,7 +447,8 @@ const LaserController: React.FC = () => {
     };
 
     const handleBrightnessChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        setLaserBrightness(parseInt(e.target.value));
+        const newBrightness = parseInt(e.target.value);
+        setLaserBrightness(newBrightness);
     };
 
     const clearConsole = (): void => {
@@ -363,9 +483,11 @@ const LaserController: React.FC = () => {
                             </div>
 
                             {isConnected ? (
-                                <button onClick={disconnect} className={styles.button}>
-                                    Disconnect
-                                </button>
+                                <div className={styles.buttonGroup}>
+                                    <button onClick={disconnect} className={styles.button}>
+                                        Disconnect
+                                    </button>
+                                </div>
                             ) : (
                                 <button onClick={connect} className={`${styles.button} ${styles.clearBtn}`}>
                                     Connect to Device
@@ -378,7 +500,7 @@ const LaserController: React.FC = () => {
                     <div className={`${styles.card} ${laserOn ? styles.cardActive : ''}`}>
                         <div className={styles.cardHeader}>
                             <h2 className={styles.cardTitle}>
-                                <Zap size={20}/>
+                                <Zap size={20} />
                                 <div className={`${laserOn ? styles.laserActive : ''}`}></div>
                                 LASER-5V
                             </h2>
@@ -395,7 +517,9 @@ const LaserController: React.FC = () => {
                         {/* Brightness Slider */}
                         <div className={styles.sliderContainer}>
                             <div className={styles.sliderHeader}>
-                                <span className={styles.sliderLabel}>Brightness Level</span>
+                                <span className={styles.sliderLabel}>
+                                    Brightness Level {!brightnessInitialized && isConnected ? '(syncing...)' : ''}
+                                </span>
                                 <span className={styles.brightnessValue}>{laserBrightness}%</span>
                             </div>
 
@@ -457,8 +581,8 @@ const LaserController: React.FC = () => {
                                         </div>
                                         <div className={styles.statItem}>
                                             <div className={styles.statContent}>
-                                                <span className={styles.statLabel}>Free Heap</span>
-                                                <span className={styles.statValue}>{deviceStats.freeHeap.toLocaleString()} bytes</span>
+                                                <span className={styles.statLabel}>Free Heap Memory</span>
+                                                <span className={styles.statValue}>{(deviceStats.freeHeap / 1024).toLocaleString()} kB</span>
                                             </div>
                                         </div>
                                     </div>
